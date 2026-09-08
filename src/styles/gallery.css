@@ -1,3 +1,5 @@
+@import '@fontsource/marcellus';
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -39,6 +41,19 @@ h1 em { color: var(--accent); font-style: italic; }
 .filters button:hover, .filters button.active { border-color: var(--accent); color: var(--ink); }
 
 .gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(2.5rem, 5vw, 5rem) 1.5rem; padding: 2.5rem 0 8rem; }
+.load-more {
+	display: block;
+	margin: -4rem auto 8rem;
+	padding: .75rem 1.25rem;
+	border: 1px solid var(--line);
+	background: transparent;
+	color: var(--ink);
+	cursor: pointer;
+	font-size: .7rem;
+	text-transform: uppercase;
+	letter-spacing: .1em;
+}
+.load-more:hover { border-color: var(--accent); color: var(--accent); }
 
 .photo-card { animation: rise .65s both; }
 .photo-button { position: relative; display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 0; background: var(--tile); cursor: zoom-in; overflow: hidden; }
@@ -55,7 +70,7 @@ h1 em { color: var(--accent); font-style: italic; }
 	max-width: 100%;
 	margin: 0;
 	overflow: hidden;
-	font-family: 'Fraunces', serif;
+	font-family: 'Marcellus', serif;
 	font-size: 1rem;
 	font-weight: 500;
 	letter-spacing: -.03em;

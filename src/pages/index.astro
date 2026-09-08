@@ -15,6 +15,7 @@ const categories = [
 		.sort(([tagA, countA], [tagB, countB]) => countB - countA || tagA.localeCompare(tagB))
 		.map(([tag]) => tag),
 ];
+const pageSize = 12;
 ---
 
 <html lang="en">
@@ -40,7 +41,7 @@ const categories = [
 					<p class="eyebrow">Collected / 2000—>2026</p>
 					<h1 id="page-title">A little <em>elsewhere.</em></h1>
 				</div>
-				<p class="intro-copy">Photographs made in the in-between moments: the quiet streets, the changing light, and the places that ask us to slow down.</p>
+				<p class="intro-copy">Life isn't about waiting for the storm to pass. It's about learning how to dance in the rain.</p>
 			</section>
 
 			<nav class="filters" aria-label="Filter photos">
@@ -51,9 +52,9 @@ const categories = [
 
 			<section class="gallery" aria-label="Photo collection">
 				{photos.map((photo, index) => (
-					<article class="photo-card" data-category={photo.data.tags.join(',')}>
+					<article class="photo-card" data-category={photo.data.tags.join(',')} hidden={index >= pageSize}>
 						<button class="photo-button" type="button" data-image={photo.data.image} data-title={photo.data.title} data-location={photo.data.location ?? ''} data-tags={photo.data.tags.join(' / ')} data-description={photo.data.description ?? ''} aria-label={`View ${photo.data.title}`}>
-							<img src={photo.data.image} alt={photo.data.alt || photo.data.title} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" />
+							<img src={index < pageSize ? photo.data.image : undefined} data-src={photo.data.image} alt={photo.data.alt || photo.data.title} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" />
 							<span class="view-mark" aria-hidden="true">↗</span>
 						</button>
 						<div class="photo-meta">
@@ -63,6 +64,7 @@ const categories = [
 					</article>
 				))}
 			</section>
+			<button class="load-more" type="button">Load more photos</button>
 		</main>
 
 		<footer id="about">
@@ -88,17 +90,44 @@ const categories = [
 	const dialogTitle = document.querySelector('.lightbox-caption h2');
 	const dialogLocation = document.querySelector('.lightbox-location');
 	const dialogDescription = document.querySelector('.lightbox-description');
+	const loadMoreButton = document.querySelector('.load-more');
+	const pageSize = 12;
+	let visibleCount = pageSize;
+	let activeCategory = 'All';
+
+	const loadImage = (card) => {
+		const image = card.querySelector('img');
+		if (!image.getAttribute('src')) image.src = image.dataset.src;
+	};
+
+	const updatePagination = () => {
+		let matchingCount = 0;
+		document.querySelectorAll('.photo-card').forEach((card) => {
+			const matches = activeCategory === 'All' || card.dataset.category.split(',').includes(activeCategory);
+			if (matches) matchingCount += 1;
+			const shouldShow = matches && matchingCount <= visibleCount;
+			card.hidden = !shouldShow;
+			if (shouldShow) loadImage(card);
+		});
+		loadMoreButton.hidden = matchingCount <= visibleCount;
+	};
 
 	document.querySelectorAll('.filters button').forEach((filter) => {
 		filter.addEventListener('click', () => {
 			document.querySelectorAll('.filters button').forEach((button) => button.classList.remove('active'));
 			filter.classList.add('active');
-			const category = filter.dataset.filter;
-			document.querySelectorAll('.photo-card').forEach((card) => {
-				card.hidden = category !== 'All' && !card.dataset.category.split(',').includes(category);
-			});
+			activeCategory = filter.dataset.filter;
+			visibleCount = pageSize;
+			updatePagination();
 		});
 	});
+
+	loadMoreButton.addEventListener('click', () => {
+		visibleCount += pageSize;
+		updatePagination();
+	});
+
+	updatePagination();
 
 	document.querySelectorAll('.photo-button').forEach((button) => {
 		button.addEventListener('click', () => {
