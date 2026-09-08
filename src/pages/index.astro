@@ -1,17 +1,120 @@
 ---
+import { getCollection } from 'astro:content';
+import '../styles/gallery.css';
 
+const photos = (await getCollection('photos')).sort((a, b) => b.data.datetime.valueOf() - a.data.datetime.valueOf());
+const tagCounts = photos.reduce((counts, photo) => {
+	for (const tag of new Set(photo.data.tags)) {
+		counts.set(tag, (counts.get(tag) ?? 0) + 1);
+	}
+	return counts;
+}, new Map<string, number>());
+const categories = [
+	'All',
+	...Array.from(tagCounts.entries())
+		.sort(([tagA, countA], [tagB, countB]) => countB - countA || tagA.localeCompare(tagB))
+		.map(([tag]) => tag),
+];
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<meta name="description" content="A small collection of photographs from near and far." />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+		<title>Field Notes — A photo collection</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		<header class="site-header">
+			<a class="wordmark" href="/" aria-label="Field Notes home">field<span>•</span>notes</a>
+			<p class="header-note">A visual journal<br />of places and pauses</p>
+			<a class="about-link" href="#about">About <span aria-hidden="true">↗</span></a>
+		</header>
+
+		<main>
+			<section class="intro" aria-labelledby="page-title">
+				<div>
+					<p class="eyebrow">Collected / 2000—>2026</p>
+					<h1 id="page-title">A little <em>elsewhere.</em></h1>
+				</div>
+				<p class="intro-copy">Photographs made in the in-between moments: the quiet streets, the changing light, and the places that ask us to slow down.</p>
+			</section>
+
+			<nav class="filters" aria-label="Filter photos">
+				{categories.map((category, index) => (
+					<button class:list={{ active: index === 0 }} type="button" data-filter={category}>{category}</button>
+				))}
+			</nav>
+
+			<section class="gallery" aria-label="Photo collection">
+				{photos.map((photo, index) => (
+					<article class="photo-card" data-category={photo.data.tags.join(',')}>
+						<button class="photo-button" type="button" data-image={photo.data.image} data-title={photo.data.title} data-location={photo.data.location ?? ''} data-tags={photo.data.tags.join(' / ')} data-description={photo.data.description ?? ''} aria-label={`View ${photo.data.title}`}>
+							<img src={photo.data.image} alt={photo.data.alt || photo.data.title} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" />
+							<span class="view-mark" aria-hidden="true">↗</span>
+						</button>
+						<div class="photo-meta">
+							<h2>{photo.data.title}</h2>
+							<p>{photo.data.location && <>{photo.data.location} <span>/</span> </>}{photo.data.tags.join(' / ')}</p>
+						</div>
+					</article>
+				))}
+			</section>
+		</main>
+
+		<footer id="about">
+			<p>Field Notes <span>© 2025</span></p>
+			<p>Made with curiosity, hosted elsewhere.</p>
+		</footer>
+
+		<dialog class="lightbox" aria-labelledby="lightbox-title">
+			<button class="close-button" type="button" aria-label="Close photo viewer">×</button>
+			<img class="lightbox-image" src="" alt="" />
+			<div class="lightbox-caption">
+				<h2 id="lightbox-title"></h2>
+				<p class="lightbox-location"></p>
+				<p class="lightbox-description"></p>
+			</div>
+		</dialog>
 	</body>
 </html>
+
+<script>
+	const dialog = document.querySelector('.lightbox');
+	const dialogImage = document.querySelector('.lightbox-image');
+	const dialogTitle = document.querySelector('.lightbox-caption h2');
+	const dialogLocation = document.querySelector('.lightbox-location');
+	const dialogDescription = document.querySelector('.lightbox-description');
+
+	document.querySelectorAll('.filters button').forEach((filter) => {
+		filter.addEventListener('click', () => {
+			document.querySelectorAll('.filters button').forEach((button) => button.classList.remove('active'));
+			filter.classList.add('active');
+			const category = filter.dataset.filter;
+			document.querySelectorAll('.photo-card').forEach((card) => {
+				card.hidden = category !== 'All' && !card.dataset.category.split(',').includes(category);
+			});
+		});
+	});
+
+	document.querySelectorAll('.photo-button').forEach((button) => {
+		button.addEventListener('click', () => {
+			dialogImage.src = button.dataset.image;
+			dialogImage.alt = button.dataset.title;
+			dialogTitle.textContent = button.dataset.title;
+			dialogLocation.textContent = button.dataset.location
+				? `${button.dataset.location} / ${button.dataset.tags}`
+				: button.dataset.tags;
+			dialogDescription.textContent = button.dataset.description;
+			dialog.showModal();
+		});
+	});
+
+	dialog.querySelector('.close-button').addEventListener('click', () => dialog.close());
+	dialog.addEventListener('click', (event) => {
+		if (event.target === dialog) dialog.close();
+	});
+</script>
